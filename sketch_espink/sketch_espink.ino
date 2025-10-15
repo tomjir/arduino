@@ -1,6 +1,7 @@
+#include "secrets.h"
+
 #include <Wire.h>
 #include <WiFi.h>
-//#include <WiFiManager.h>
 #include <HTTPClient.h>
 #include <NetworkClientSecure.h>
 #include <ArduinoJson.h>
@@ -15,14 +16,8 @@
 // ESPink-Shelf-213 GDEM0213B74 -> 2.13" 122x250, SSD1680
 GxEPD2_BW<GxEPD2_213_B74, GxEPD2_213_B74::HEIGHT> display(GxEPD2_213_B74(SS, 17, 16, 4)); 
 
-#define NTP_SERVER     "pool.ntp.org"
-#define UTC_OFFSET     1
-#define UTC_OFFSET_DST 1
 
-struct wifi_cred {
-  String ssid;
-  String pass;  
-};
+
 
 const char openmeteo[] = "https://api.open-meteo.com/v1/forecast?latitude=48.95&longitude=14.46&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,rain_sum,showers_sum,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FBerlin&forecast_days=3&wind_speed_unit=ms";
 String rootCACertificate = R"(-----BEGIN CERTIFICATE-----
@@ -83,6 +78,7 @@ String get_weather_name(int code)
   if (code == 96 || code == 99) return "silne bourky";
   return "";
 }
+
 
 /* return precipitation probability if weather code to rain */
 String get_prec_prob(int code, float prob)
@@ -167,116 +163,113 @@ void print_last_values(JsonDocument doc)
                   (float) doc["daily"]["precipitation_probability_max"][1])
   );
 
-  display.display(false);
-  display.powerOff();
-  digitalWrite(2, LOW);   // turn off the ePaper
+  disableEPaperPower();
 }
 
-void setup() {
-  Serial.begin(115200);
 
-  /*------- WiFi Manager init ----------
-  bool wifi_res;
-  WiFiManager wifiManager;
-  //wifiManager.resetSettings();
-  wifiManager.setConfigPortalTimeout(60); // seconds
-  wifi_res = wifiManager.autoConnect("simplesp", "password");
-  if (wifi_res) {
-    Serial.println("WiFi connected");
-  }
-  else {
-    Serial.println("WiFi failed, going to sleep");
-    deep_sleep(360);
-  }*/
-  /*------- Static WiFi configuration */
+/* try connect to network or sleep if not available */
+void connectToWiFi() {
   Serial.println("WiFi start");
-  wifi_cred creds[] = {
-    {"hotspot", "password"}
-  };
+
   const int numCreds = sizeof(creds) / sizeof(creds[0]);
+
   for (int j = 0; j < numCreds; ++j) {
+    Serial.print("Trying WiFi: ");
     Serial.println(creds[j].ssid);
+
     WiFi.disconnect(true, true);
-    WiFi.mode(WIFI_OFF); // workaround as disconnect does not work correctly - https://github.com/espressif/arduino-esp32/issues/11742
+    WiFi.mode(WIFI_OFF); // workaround for disconnect issue - https://github.com/espressif/arduino-esp32/issues/11742
     WiFi.begin(creds[j].ssid, creds[j].pass);
     delay(5000);
+
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println("WiFi connected");
-      break;
+      return;
     }
-    if (j == n - 1) {
-      Serial.println("No WiFi available. Sleep 6 hours.");
-      deep_sleep(360);
-    }
-  }
 
-  /*------- Read CA certificate from SPIFFS -------
-  if (!SPIFFS.begin(true)) {
-    Serial.println("Could not mount SPIFFS");
-    return;
+    Serial.println("No WiFi available. Sleep 6 hours.");
+    deep_sleep(360);
   }
-  File cacert = SPIFFS.open("/cacert.txt", "r");
-  if (!cacert) {
-    Serial.println("Could not read CA certificate");
-    return;
-  }
-  while (cacert.available()) {
-    rootCACertificate = cacert.readString();
-  }
-  cacert.close();*/
+}
 
-  /*------- Enable voltage for ePaper ----------*/
+
+void enableEPaperPower() {
   pinMode(2, OUTPUT);
-  digitalWrite(2, HIGH);   // turn on the ePaper
+  digitalWrite(2, HIGH);
   delay(100);
+}
 
-  Wire.begin(21, 22);
-  while (!Serial) {
-    ; // wait for serial
-  }
 
-  /*------- ePaper init ----------*/
-  display.init(); // ePaper init
+void disableEPaperPower() {
+  display.display(false);
+  display.powerOff();
+  digitalWrite(2, LOW);
+}
+
+
+void initEPaperDisplay() {
+  display.init();
   display.setRotation(1);
-  display.setTextColor(GxEPD_BLACK); // Set text color
-  display.fillScreen(GxEPD_WHITE); // set the background to white
-}
- 
-void loop() {
-  NetworkClientSecure *client = new NetworkClientSecure;
-  client->setCACert(rootCACertificate.c_str());
-  HTTPClient https;
-
-  int i = 0;
-  int statusCode = -1;
-  https.begin(*client, openmeteo);
-  https.addHeader("Accept", "application/json");
-  
-  do {
-    delay(i * 10000);
-    statusCode = https.GET();
-    ++i;
-    if (statusCode != HTTP_CODE_OK) {
-      Serial.printf("Https GET... failed, error: %s\n", https.errorToString(statusCode).c_str());
-    }
-  } while (i < 3 && statusCode != HTTP_CODE_OK);
-
-  String response = https.getString();
-  Serial.printf("Response status: %d, length: %d\n", statusCode, response.length());
-
-  JsonDocument doc;
-  deserializeJson(doc, response);
-  print_last_values(doc);
-
-  deep_sleep(15);
+  display.setTextColor(GxEPD_BLACK);
+  display.fillScreen(GxEPD_WHITE);
 }
 
-// start deep sleep for several minutes
+
+/* deep sleep for some minutes */
 void deep_sleep(int sleep_duration)
 {
-  // sleep for some time
   Serial.printf("Going to sleep for %d minutes", sleep_duration);
   Serial.flush();
   esp_sleep_enable_timer_wakeup(sleep_duration * 60 * 1E6);
   esp_deep_sleep_start();
+}
+
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) { ; }
+
+  connectToWiFi();
+  enableEPaperPower();
+
+  Wire.begin(21, 22);
+  initEPaperDisplay();
+}
+
+ 
+void loop() {
+  // Create secure client and set CA certificate
+  auto client = new NetworkClientSecure;
+  client->setCACert(rootCACertificate.c_str());
+
+  // Prepare HTTPS request
+  HTTPClient https;
+  https.begin(*client, openmeteo);
+  https.addHeader("Accept", "application/json");
+  
+  int statusCode = https.GET();
+
+  if (statusCode != HTTP_CODE_OK) {
+    Serial.printf("Https GET failed, error: %s\n", https.errorToString(statusCode).c_str());
+  } else {
+    String response = https.getString();
+    Serial.printf("Response status: %d, length: %d\n", statusCode, response.length());
+
+    JsonDocument doc;
+    DeserializationError d_error = deserializeJson(doc, response);
+
+    if (d_error) {
+      Serial.print("JSON deserialization failed: ");
+      Serial.println(d_error.c_str());
+    } else {
+      print_last_values(doc);
+    }
+  }
+
+  // Clean up
+  https.end();
+  delete client;
+
+  // Wait 15 minutes for next update
+  deep_sleep(15);
 }
