@@ -119,33 +119,37 @@ String get_wind_name(float v_D)
     return "";
 }
 
+
+/* reformat date time string */
 const char* parse_dt(String dt)
 {
   String datum;
   dt.replace("T", " ");
+  dt.replace("-", "/");
   return dt.c_str();
 }
 
-/*------- Update ePaper ----------*/
+
+/* update ePaper */
 void print_last_values(JsonDocument doc)
 {
   display.setFont(&FreeSansBold9pt7b);
-  display.setCursor(5, 20);
+  display.setCursor(5, 22);
   display.printf("%s", parse_dt(doc["current"]["time"]));
 
   display.setFont(&FreeSansBold12pt7b);
-  display.setCursor(160, 22);
+  display.setCursor(160, 24);
   display.printf("%.1f 'C", (float) doc["current"]["temperature_2m"]);
 
   display.setFont(&FreeSans9pt7b);
-  display.setCursor(5, 42);
+  display.setCursor(5, 44);
   display.printf("%s %.0f m/s   %.0f %%   %.0f hPa",
     get_wind_name(doc["current"]["wind_direction_10m"]),
     round((float) doc["current"]["wind_speed_10m"]),
     round((float) doc["current"]["relative_humidity_2m"]),
     round((float) doc["current"]["pressure_msl"]));
 
-  display.setCursor(5, 75);
+  display.setCursor(5, 77);
   display.printf("Dnes: %.0f/%.0f 'C, %s %s",
     round((float) doc["daily"]["temperature_2m_max"][0]),
     round((float) doc["daily"]["temperature_2m_min"][0]),
@@ -154,7 +158,7 @@ void print_last_values(JsonDocument doc)
                   (float) doc["daily"]["precipitation_probability_max"][0])
   );
 
-  display.setCursor(5, 105);
+  display.setCursor(5, 106);
   display.printf("Zitra: %.0f/%.0f 'C, %s %s",
     round((float) doc["daily"]["temperature_2m_max"][1]),
     round((float) doc["daily"]["temperature_2m_min"][1]),
