@@ -1,3 +1,5 @@
+/* ESP32 Dev Module */
+
 #include "secrets.h"
 
 #include <Wire.h>
@@ -187,8 +189,10 @@ void connectToWiFi() {
       return;
     }
 
-    Serial.println("No WiFi available. Sleep 6 hours.");
-    deep_sleep(360);
+    if (j == numCreds - 1) {
+      Serial.println("No WiFi available. Sleep 3 hours.");
+      deep_sleep(180);
+    }
   }
 }
 
