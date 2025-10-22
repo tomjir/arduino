@@ -61,7 +61,7 @@ emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 
 
 /* explanation of weather codes */
-String get_weather_name(int code)
+String weatherName(int code)
 {
   if (code == 0) return "jasno";
   if (code == 1) return "skoro jasno";
@@ -87,7 +87,7 @@ String get_weather_name(int code)
 
 
 /* return precipitation probability if weather code to rain */
-String get_prec_prob(int code, float prob)
+String precProb(int code, float prob)
 {
   if (code >= 61 && code <= 99 && prob >= 25) {
     return String(round(prob), 0) + "%";
@@ -99,7 +99,7 @@ String get_prec_prob(int code, float prob)
 
 
 /* return direction of wind from angle value */
-String get_wind_name(float v_D)
+String windName(float v_D)
 {
   if (v_D >= 0 && v_D < 25 || v_D > 335)
     return "S";
@@ -123,9 +123,8 @@ String get_wind_name(float v_D)
 
 
 /* reformat date time string */
-const char* parse_dt(String dt)
+const char* parseDatetime(String dt)
 {
-  String datum;
   dt.replace("T", " ");
   dt.replace("-", "/");
   return dt.c_str();
@@ -133,11 +132,11 @@ const char* parse_dt(String dt)
 
 
 /* update ePaper */
-void print_last_values(JsonDocument doc)
+void printPaper(JsonDocument doc, String battery)
 {
   display.setFont(&FreeSansBold9pt7b);
   display.setCursor(5, 22);
-  display.printf("%s", parse_dt(doc["current"]["time"]));
+  display.printf("%s", parseDatetime(doc["current"]["time"]));
 
   display.setFont(&FreeSansBold12pt7b);
   display.setCursor(160, 24);
@@ -146,7 +145,7 @@ void print_last_values(JsonDocument doc)
   display.setFont(&FreeSans9pt7b);
   display.setCursor(5, 44);
   display.printf("%s %.0f m/s   %.0f %%   %.0f hPa",
-    get_wind_name(doc["current"]["wind_direction_10m"]),
+    windName(doc["current"]["wind_direction_10m"]),
     round((float) doc["current"]["wind_speed_10m"]),
     round((float) doc["current"]["relative_humidity_2m"]),
     round((float) doc["current"]["pressure_msl"]));
@@ -155,8 +154,8 @@ void print_last_values(JsonDocument doc)
   display.printf("Dnes: %.0f/%.0f 'C, %s %s",
     round((float) doc["daily"]["temperature_2m_max"][0]),
     round((float) doc["daily"]["temperature_2m_min"][0]),
-    get_weather_name((int) doc["daily"]["weather_code"][0]),
-    get_prec_prob((int) doc["daily"]["weather_code"][0],
+    weatherName((int) doc["daily"]["weather_code"][0]),
+    precProb((int) doc["daily"]["weather_code"][0],
                   (float) doc["daily"]["precipitation_probability_max"][0])
   );
 
@@ -164,8 +163,8 @@ void print_last_values(JsonDocument doc)
   display.printf("Zitra: %.0f/%.0f 'C, %s %s",
     round((float) doc["daily"]["temperature_2m_max"][1]),
     round((float) doc["daily"]["temperature_2m_min"][1]),
-    get_weather_name((int) doc["daily"]["weather_code"][1]),
-    get_prec_prob((int) doc["daily"]["weather_code"][1],
+    weatherName((int) doc["daily"]["weather_code"][1]),
+    precProb((int) doc["daily"]["weather_code"][1],
                   (float) doc["daily"]["precipitation_probability_max"][1])
   );
 
@@ -198,7 +197,7 @@ void connectToWiFi() {
 
     if (j == numCreds - 1) {
       Serial.println("No WiFi available. Sleep 3 hours.");
-      deep_sleep(180);
+      deepSleep(180);
     }
   }
 }
@@ -240,7 +239,7 @@ String batteryStatus() {
 
 
 /* deep sleep for some minutes */
-void deep_sleep(int sleep_duration)
+void deepSleep(int sleep_duration)
 {
   Serial.printf("Going to sleep for %d minutes", sleep_duration);
   Serial.flush();
@@ -295,5 +294,5 @@ void loop() {
   delete client;
 
   // Wait 15 minutes for next update
-  deep_sleep(15);
+  deepSleep(15);
 }
