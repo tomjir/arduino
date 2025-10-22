@@ -15,10 +15,14 @@
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSans9pt7b.h>
 
-// ESPink-Shelf-213 GDEM0213B74 -> 2.13" 122x250, SSD1680
+/*------- ESPink-Shelf-213 GDEM0213B74 -> 2.13" 122x250, SSD1680 --------*/
 GxEPD2_BW<GxEPD2_213_B74, GxEPD2_213_B74::HEIGHT> display(GxEPD2_213_B74(SS, 17, 16, 4)); 
 
-
+/*------- Analog Read ----------*/
+#define deviderRatio 1.769
+#define ADC 34
+#define minVoltage 4.0
+#define maxVoltage 5.0
 
 
 const char openmeteo[] = "https://api.open-meteo.com/v1/forecast?latitude=48.95&longitude=14.46&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,rain_sum,showers_sum,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FBerlin&forecast_days=3&wind_speed_unit=ms";
@@ -165,6 +169,9 @@ void print_last_values(JsonDocument doc)
                   (float) doc["daily"]["precipitation_probability_max"][1])
   );
 
+  display.setCursor(200, 120);
+  display.print(battery);
+
   disableEPaperPower();
 }
 
@@ -219,6 +226,19 @@ void initEPaperDisplay() {
 }
 
 
+/*------- battery voltage measurement ----------*/
+String batteryStatus() {
+  const float volt = (analogReadMilliVolts(ADC) * deviderRatio / 1000);
+  Serial.printf("Battery voltage: %.2f V\n", volt);
+  const int i_ratio = floor(10 * (volt - minVoltage) / (maxVoltage - minVoltage));
+  String indicator = "";
+  for (int i = 0; i < i_ratio; i++) {
+    indicator += ".";
+  }
+  return indicator;
+}
+
+
 /* deep sleep for some minutes */
 void deep_sleep(int sleep_duration)
 {
@@ -266,7 +286,7 @@ void loop() {
       Serial.print("JSON deserialization failed: ");
       Serial.println(d_error.c_str());
     } else {
-      print_last_values(doc);
+      printPaper(doc, batteryStatus());
     }
   }
 
