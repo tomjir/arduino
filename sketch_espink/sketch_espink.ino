@@ -87,7 +87,7 @@ String weatherName(int code)
 
 
 /* return precipitation probability if weather code to rain */
-String precProb(int code, float prob)
+/*String precProb(int code, float prob)
 {
   if (code >= 61 && code <= 99 && prob >= 25) {
     return String(round(prob), 0) + "%";
@@ -95,7 +95,7 @@ String precProb(int code, float prob)
   else {
     return "";
   }
-} 
+}*/
 
 
 /* return direction of wind from angle value */
@@ -151,21 +151,17 @@ void printPaper(JsonDocument doc, String battery)
     round((float) doc["current"]["pressure_msl"]));
 
   display.setCursor(5, 77);
-  display.printf("Dnes: %.0f/%.0f 'C, %s %s",
+  display.printf("Dnes: %.0f/%.0f 'C, %s",
     round((float) doc["daily"]["temperature_2m_max"][0]),
     round((float) doc["daily"]["temperature_2m_min"][0]),
-    weatherName((int) doc["daily"]["weather_code"][0]),
-    precProb((int) doc["daily"]["weather_code"][0],
-                  (float) doc["daily"]["precipitation_probability_max"][0])
+    weatherName((int) doc["daily"]["weather_code"][0])
   );
 
   display.setCursor(5, 106);
-  display.printf("Zitra: %.0f/%.0f 'C, %s %s",
+  display.printf("Zitra: %.0f/%.0f 'C, %s",
     round((float) doc["daily"]["temperature_2m_max"][1]),
     round((float) doc["daily"]["temperature_2m_min"][1]),
-    weatherName((int) doc["daily"]["weather_code"][1]),
-    precProb((int) doc["daily"]["weather_code"][1],
-                  (float) doc["daily"]["precipitation_probability_max"][1])
+    weatherName((int) doc["daily"]["weather_code"][1])
   );
 
   display.setCursor(200, 120);
