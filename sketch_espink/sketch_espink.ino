@@ -21,8 +21,8 @@ GxEPD2_BW<GxEPD2_213_B74, GxEPD2_213_B74::HEIGHT> display(GxEPD2_213_B74(SS, 17,
 /*------- Analog Read ----------*/
 #define deviderRatio 1.769
 #define ADC 34
-#define minVoltage 4.0
-#define maxVoltage 5.0
+#define minVoltage 3.2
+#define maxVoltage 3.7
 
 
 const char openmeteo[] = "https://api.open-meteo.com/v1/forecast?latitude=48.95&longitude=14.46&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,sunrise,sunset,rain_sum,showers_sum,precipitation_sum,precipitation_probability_max,wind_speed_10m_max&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=Europe%2FBerlin&forecast_days=3&wind_speed_unit=ms";
